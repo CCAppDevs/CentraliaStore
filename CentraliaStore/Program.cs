@@ -1,3 +1,4 @@
+using CentraliaStore.Areas.Identity;
 using CentraliaStore.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,8 +17,14 @@ namespace CentraliaStore
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<StoreContext>();
+            builder.Services.AddDefaultIdentity<AppUser>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+            })
+            .AddRoles<IdentityRole>()
+           .AddEntityFrameworkStores<StoreContext>();
+            
+            
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();

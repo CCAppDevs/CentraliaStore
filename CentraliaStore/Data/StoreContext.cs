@@ -2,10 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using CentraliaStore.Models;
 using CentraliaStore.Areas.Identity;
-using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Identity;
-using System.Configuration;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace CentraliaStore.Data
 {
@@ -19,23 +17,17 @@ namespace CentraliaStore.Data
             Configuration = configuration;
         }
 
-        // dynamic seeded data and configuration goes here
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder
                 .UseSeeding((context, _) =>
                 {
-                    // checking for a value in the database
-                    var admin = context.Set<AppUser>().FirstOrDefault(u => u.UserName == Configuration["Accounts:AdminEmail"]);
-
                     var hasher = new PasswordHasher<AppUser>();
 
-                    // if the value doesnt exist, go ahead and add it
+                    var admin = context.Set<AppUser>().FirstOrDefault(u => u.UserName == Configuration["Accounts:AdminEmail"]);
                     if (admin == null)
                     {
-                        // add a user
                         context.Set<AppUser>().Add(new AppUser
                         {
-                            // add properties to specify the app user
                             UserName = Configuration["Accounts:AdminEmail"],
                             NormalizedUserName = Configuration["Accounts:AdminEmail"].ToUpper(),
                             Email = Configuration["Accounts:AdminEmail"],
@@ -49,13 +41,10 @@ namespace CentraliaStore.Data
                     }
 
                     var user = context.Set<AppUser>().FirstOrDefault(u => u.UserName == Configuration["Accounts:TestUserEmail"]);
-
                     if (user == null)
                     {
-                        // add a user
                         context.Set<AppUser>().Add(new AppUser
                         {
-                            // add properties to specify the app user
                             UserName = Configuration["Accounts:TestUserEmail"],
                             NormalizedUserName = Configuration["Accounts:TestUserEmail"].ToUpper(),
                             Email = Configuration["Accounts:TestUserEmail"],
@@ -70,57 +59,63 @@ namespace CentraliaStore.Data
                 })
                 .UseAsyncSeeding(async (context, _, cancellationToken) =>
                 {
-                    // checking for a value in the database
-                    var admin = await context.Set<AppUser>().FirstOrDefaultAsync(u => u.UserName == Configuration["Accounts:AdminEmail"]);
-                    
                     var hasher = new PasswordHasher<AppUser>();
+                    var userManager = context.GetService<UserManager<AppUser>>();
+                    var roleManager = context.GetService<RoleManager<IdentityRole>>();
+                    var adminEmail = Configuration["Accounts:AdminEmail"];
+                    var testEmail = Configuration["Accounts:TestUserEmail"];
 
-                    // if the value doesnt exist, go ahead and add it
+                    if (!await roleManager.RoleExistsAsync("Admin"))
+                    {
+                        await roleManager.CreateAsync(new IdentityRole("Admin"));
+                    }
+
+                    var admin = await userManager.FindByEmailAsync(adminEmail);
                     if (admin == null)
                     {
-                        context.Set<AppUser>().Add(new AppUser
+                        admin = new AppUser
                         {
-                            // add properties to specify the app user
-                            UserName = Configuration["Accounts:AdminEmail"],
-                            NormalizedUserName = Configuration["Accounts:AdminEmail"].ToUpper(),
-                            Email = Configuration["Accounts:AdminEmail"],
-                            NormalizedEmail = Configuration["Accounts:AdminEmail"].ToUpper(),
+                            UserName = adminEmail,
+                            NormalizedUserName = adminEmail.ToUpper(),
+                            Email = adminEmail,
+                            NormalizedEmail = adminEmail.ToUpper(),
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             SecurityStamp = Guid.NewGuid().ToString(),
                             PasswordHash = hasher.HashPassword(null, Configuration["Accounts:AdminPassword"])
-                        });
-                        await context.SaveChangesAsync(cancellationToken);
+                        };
 
+                        await userManager.CreateAsync(admin);
                     }
 
-                    var user = await context.Set<AppUser>().FirstOrDefaultAsync(u => u.UserName == Configuration["Accounts:TestUserEmail"]);
+                    if (!await userManager.IsInRoleAsync(admin, "Admin"))
+                    {
+                        await userManager.AddToRoleAsync(admin, "Admin");
+                    }
 
+                    var user = await userManager.FindByEmailAsync(testEmail);
                     if (user == null)
                     {
-                        // add a user
-                        context.Set<AppUser>().Add(new AppUser
+                        var newUser = new AppUser
                         {
-                            // add properties to specify the app user
-                            UserName = Configuration["Accounts:TestUserEmail"],
-                            NormalizedUserName = Configuration["Accounts:TestUserEmail"].ToUpper(),
-                            Email = Configuration["Accounts:TestUserEmail"],
-                            NormalizedEmail = Configuration["Accounts:TestUserEmail"].ToUpper(),
+                            UserName = testEmail,
+                            NormalizedUserName = testEmail.ToUpper(),
+                            Email = testEmail,
+                            NormalizedEmail = testEmail.ToUpper(),
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             SecurityStamp = Guid.NewGuid().ToString(),
                             PasswordHash = hasher.HashPassword(null, Configuration["Accounts:TestUserPassword"])
-                        });
-                        await context.SaveChangesAsync(cancellationToken);
+                        };
+
+                        await userManager.CreateAsync(newUser);
                     }
                 });
 
-        // static seeded data and model setup goes in this method
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // add categories
             builder.Entity<Category>().HasData(
                 new Category { CategoryId = 1, Name = "Sweatshirts" },
                 new Category { CategoryId = 2, Name = "Water Bottles" },
@@ -135,7 +130,6 @@ namespace CentraliaStore.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<Phone> Phones { get; set; }
         public DbSet<Product> Products { get; set; }
-
         public DbSet<AppUser> Users { get; set; }
     }
 }
