@@ -220,6 +220,15 @@ namespace CentraliaStore.Controllers
             if (apiKey == null)
             {
                 return NotFound();
+            }    
+        
+            if (User.IsInRole("Administrator"))
+            {
+                ViewData["AppUserId"] = new SelectList(_context.Users.Where(u => u.UserName == User.Identity.Name), "Id", "Id");
+            }
+            else
+            {
+                return new ForbidResult();
             }
 
             return View(apiKey);
@@ -235,6 +244,15 @@ namespace CentraliaStore.Controllers
             if (apiKey != null)
             {
                 _context.ApiKeys.Remove(apiKey);
+            }
+
+            if (User.IsInRole("Administrator"))
+            {
+                ViewData["AppUserId"] = new SelectList(_context.Users.Where(u => u.UserName == User.Identity.Name), "Id", "Id");
+            }
+            else
+            {
+                return new ForbidResult();
             }
 
             await _context.SaveChangesAsync();
