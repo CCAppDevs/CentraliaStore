@@ -206,6 +206,7 @@ namespace CentraliaStore.Controllers
         }
 
         // GET: ApiKeys/Delete/5
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(int? id)
         {
             // TODO: Add delete functionality for only admins
@@ -226,6 +227,7 @@ namespace CentraliaStore.Controllers
         }
 
         // POST: ApiKeys/Delete/5
+        [Authorize(Roles = "Administrator")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
