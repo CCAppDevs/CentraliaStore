@@ -106,6 +106,32 @@ namespace CentraliaStore.Data
                         context.Set<IdentityUserRole<string>>().Add(roleUser);
                         context.SaveChanges();
                     }
+
+                    var adminApiKey = context.Set<ApiKey>().FirstOrDefault(k => k.AppUserId == admin.Id);
+                    if (adminApiKey == null)
+                    {
+                        adminApiKey = new ApiKey
+                        {
+                            ApiSecret = Guid.NewGuid().ToString(),
+                            AppUserId = admin.Id
+                        };
+
+                        context.Set<ApiKey>().Add(adminApiKey);
+                        context.SaveChanges();
+                    }
+
+                    var userApiKey = context.Set<ApiKey>().FirstOrDefault(k => k.AppUserId == user.Id);
+                    if (userApiKey == null)
+                    {
+                        userApiKey = new ApiKey
+                        {
+                            ApiSecret = Guid.NewGuid().ToString(),
+                            AppUserId = user.Id
+                        };
+
+                        context.Set<ApiKey>().Add(userApiKey);
+                        context.SaveChanges();
+                    }
                 })
                 .UseAsyncSeeding(async (context, _, cancellationToken) =>
                 {
@@ -191,6 +217,32 @@ namespace CentraliaStore.Data
                         context.Set<IdentityUserRole<string>>().Add(roleUser);
                         await context.SaveChangesAsync(cancellationToken);
                     }
+
+                    var adminApiKey = await context.Set<ApiKey>().FirstOrDefaultAsync(k => k.AppUserId == admin.Id);
+                    if (adminApiKey == null)
+                    {
+                        adminApiKey = new ApiKey
+                        {
+                            ApiSecret = Guid.NewGuid().ToString(),
+                            AppUserId = admin.Id
+                        };
+
+                        context.Set<ApiKey>().Add(adminApiKey);
+                        await context.SaveChangesAsync(cancellationToken);
+                    }
+
+                    var userApiKey = await context.Set<ApiKey>().FirstOrDefaultAsync(k => k.AppUserId == user.Id);
+                    if (userApiKey == null)
+                    {
+                        userApiKey = new ApiKey
+                        {
+                            ApiSecret = Guid.NewGuid().ToString(),
+                            AppUserId = user.Id
+                        };
+
+                        context.Set<ApiKey>().Add(userApiKey);
+                        await context.SaveChangesAsync(cancellationToken);
+                    }
                 });
 
         // static seeded data and model setup goes in this method
@@ -218,6 +270,9 @@ namespace CentraliaStore.Data
                 new Product { ProductId = 3, Name = "Color Changing Notebook", Description = "150 pages", CategoryId = 3 },
                 new Product { ProductId = 4, Name = " c# Textbook", Description = "Intro to c#", CategoryId = 4 }
             );
+
+            builder.Entity<ApiKey>().Navigation(k => k.AppUser).AutoInclude();
+
         }
 
         public DbSet<Address> Addresses { get; set; }
@@ -227,6 +282,7 @@ namespace CentraliaStore.Data
         public DbSet<Product> Products { get; set; }
 
         public DbSet<AppUser> Users { get; set; }
+        public DbSet<ApiKey> ApiKeys { get; set; }
 
         public DbSet<IdentityRole> Roles { get; set; } = default!;
     }
