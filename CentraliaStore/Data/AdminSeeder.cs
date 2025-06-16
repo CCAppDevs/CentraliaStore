@@ -39,6 +39,24 @@ namespace CentraliaStore.Data
             {
                 await userManager.AddToRoleAsync(adminUser, adminRole);
             }
+
+            // Test User Account
+            var testEmail = "test@centraliastore.com";
+            var testPassword = "Test123!";
+            var testUser = await userManager.FindByEmailAsync(testEmail);
+
+            if (testUser == null)
+            {
+                var user = new AppUser
+                {
+                    UserName = testEmail,
+                    Email = testEmail,
+                    EmailConfirmed = true
+                };
+
+                await userManager.CreateAsync(user, testPassword);
+
+            }
         }
     }
 }

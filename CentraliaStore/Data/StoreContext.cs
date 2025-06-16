@@ -1,11 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+﻿using CentraliaStore.Areas.Identity;
 using CentraliaStore.Models;
-using CentraliaStore.Areas.Identity;
-using System.Reflection.Metadata;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using System.Configuration;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace CentraliaStore.Data
 {
@@ -19,22 +16,17 @@ namespace CentraliaStore.Data
             Configuration = configuration;
         }
 
-        // dynamic seeded data and configuration goes here
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder
                 .UseSeeding((context, _) =>
                 {
-                    // checking for a value in the database
                     var admin = context.Set<AppUser>().FirstOrDefault(u => u.UserName == Configuration["Accounts:AdminEmail"]);
-
                     var hasher = new PasswordHasher<AppUser>();
 
-                    // if the value doesnt exist, go ahead and add it
                     if (admin == null)
                     {
                         admin = new AppUser
                         {
-                            // add properties to specify the app user
                             UserName = Configuration["Accounts:AdminEmail"],
                             NormalizedUserName = Configuration["Accounts:AdminEmail"].ToUpper(),
                             Email = Configuration["Accounts:AdminEmail"],
@@ -44,22 +36,16 @@ namespace CentraliaStore.Data
                             SecurityStamp = Guid.NewGuid().ToString(),
                             PasswordHash = hasher.HashPassword(null, Configuration["Accounts:AdminPassword"])
                         };
-
-                        // add a user
                         context.Set<AppUser>().Add(admin);
                         context.SaveChanges();
                     }
-
-                    // i have an admin
 
                     var user = context.Set<AppUser>().FirstOrDefault(u => u.UserName == Configuration["Accounts:TestUserEmail"]);
 
                     if (user == null)
                     {
-                        // add a user
                         context.Set<AppUser>().Add(new AppUser
                         {
-                            // add properties to specify the app user
                             UserName = Configuration["Accounts:TestUserEmail"],
                             NormalizedUserName = Configuration["Accounts:TestUserEmail"].ToUpper(),
                             Email = Configuration["Accounts:TestUserEmail"],
@@ -90,13 +76,10 @@ namespace CentraliaStore.Data
                         context.SaveChanges();
                     }
 
-                    // i have an admin role
-
                     var roleUser = context.Set<IdentityUserRole<string>>().FirstOrDefault(a => a.RoleId == adminRole.Id);
 
                     if (roleUser == null)
                     {
-                        // add it
                         roleUser = new IdentityUserRole<string>
                         {
                             RoleId = adminRole.Id,
@@ -135,17 +118,13 @@ namespace CentraliaStore.Data
                 })
                 .UseAsyncSeeding(async (context, _, cancellationToken) =>
                 {
-                    // checking for a value in the database
                     var admin = await context.Set<AppUser>().FirstOrDefaultAsync(u => u.UserName == Configuration["Accounts:AdminEmail"]);
-
                     var hasher = new PasswordHasher<AppUser>();
 
-                    // if the value doesnt exist, go ahead and add it
                     if (admin == null)
                     {
                         admin = new AppUser
                         {
-                            // add properties to specify the app user
                             UserName = Configuration["Accounts:AdminEmail"],
                             NormalizedUserName = Configuration["Accounts:AdminEmail"].ToUpper(),
                             Email = Configuration["Accounts:AdminEmail"],
@@ -155,22 +134,16 @@ namespace CentraliaStore.Data
                             SecurityStamp = Guid.NewGuid().ToString(),
                             PasswordHash = hasher.HashPassword(null, Configuration["Accounts:AdminPassword"])
                         };
-
-                        // add a user
                         context.Set<AppUser>().Add(admin);
                         await context.SaveChangesAsync(cancellationToken);
                     }
-
-                    // i have an admin
 
                     var user = await context.Set<AppUser>().FirstOrDefaultAsync(u => u.UserName == Configuration["Accounts:TestUserEmail"]);
 
                     if (user == null)
                     {
-                        // add a user
                         context.Set<AppUser>().Add(new AppUser
                         {
-                            // add properties to specify the app user
                             UserName = Configuration["Accounts:TestUserEmail"],
                             NormalizedUserName = Configuration["Accounts:TestUserEmail"].ToUpper(),
                             Email = Configuration["Accounts:TestUserEmail"],
@@ -201,13 +174,10 @@ namespace CentraliaStore.Data
                         await context.SaveChangesAsync(cancellationToken);
                     }
 
-                    // i have an admin role
-
                     var roleUser = await context.Set<IdentityUserRole<string>>().FirstOrDefaultAsync(a => a.RoleId == adminRole.Id);
 
                     if (roleUser == null)
                     {
-                        // add it
                         roleUser = new IdentityUserRole<string>
                         {
                             RoleId = adminRole.Id,
@@ -245,34 +215,26 @@ namespace CentraliaStore.Data
                     }
                 });
 
-        // static seeded data and model setup goes in this method
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // add categories
             builder.Entity<Category>().HasData(
                 new Category { CategoryId = 1, Name = "Sweatshirts" },
                 new Category { CategoryId = 2, Name = "Water Bottles" },
                 new Category { CategoryId = 3, Name = "Notebooks" },
                 new Category { CategoryId = 4, Name = "Textbooks" },
-                new Category
-                {
-                    CategoryId = 5,
-                    Name = "Writing Utensils"
-                }
+                new Category { CategoryId = 5, Name = "Writing Utensils" }
             );
 
-            // added seed data for products for shopping view
             builder.Entity<Product>().HasData(
                 new Product { ProductId = 1, Name = "Logo Hoodie", Description = "Warm and comfortable", CategoryId = 1 },
                 new Product { ProductId = 2, Name = "Steel Water Bottle", Description = "Keeps drinks cold", CategoryId = 2 },
                 new Product { ProductId = 3, Name = "Color Changing Notebook", Description = "150 pages", CategoryId = 3 },
-                new Product { ProductId = 4, Name = " c# Textbook", Description = "Intro to c#", CategoryId = 4 }
+                new Product { ProductId = 4, Name = "C# Textbook", Description = "Intro to C#", CategoryId = 4 }
             );
 
             builder.Entity<ApiKey>().Navigation(k => k.AppUser).AutoInclude();
-
         }
 
         public DbSet<Address> Addresses { get; set; }
@@ -280,10 +242,8 @@ namespace CentraliaStore.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<Phone> Phones { get; set; }
         public DbSet<Product> Products { get; set; }
-
         public DbSet<AppUser> Users { get; set; }
         public DbSet<ApiKey> ApiKeys { get; set; }
-
         public DbSet<IdentityRole> Roles { get; set; } = default!;
     }
 }

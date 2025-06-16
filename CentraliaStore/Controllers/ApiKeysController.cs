@@ -214,6 +214,13 @@ namespace CentraliaStore.Controllers
                 return NotFound();
             }
 
+            // Only admin can delete
+            if (!User.IsInRole("Administrator"))
+            {
+                return Forbid(); 
+            }
+
+
             var apiKey = await _context.ApiKeys
                 .Include(a => a.AppUser)
                 .FirstOrDefaultAsync(m => m.ApiKeyId == id);
@@ -232,11 +239,18 @@ namespace CentraliaStore.Controllers
         {
             // TODO: Add delete functionality for only admins
             var apiKey = await _context.ApiKeys.FindAsync(id);
-            if (apiKey != null)
+            if (apiKey == null)
             {
-                _context.ApiKeys.Remove(apiKey);
+                return NotFound();
             }
 
+            // Only admins can delete
+            if (!User.IsInRole("Administrator"))
+            {
+                return Forbid();
+            }
+
+            _context.ApiKeys.Remove(apiKey);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
