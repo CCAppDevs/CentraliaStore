@@ -4,6 +4,7 @@ using CentraliaStore.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CentraliaStore.Data.Migrations
 {
     [DbContext(typeof(StoreContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250610162041_AddedApiKeys")]
+    partial class AddedApiKeys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -125,7 +128,7 @@ namespace CentraliaStore.Data.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.ToTable("Addresses", (string)null);
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("CentraliaStore.Models.ApiKey", b =>
@@ -148,7 +151,7 @@ namespace CentraliaStore.Data.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.ToTable("ApiKeys", (string)null);
+                    b.ToTable("ApiKeys");
                 });
 
             modelBuilder.Entity("CentraliaStore.Models.Category", b =>
@@ -165,7 +168,7 @@ namespace CentraliaStore.Data.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
 
                     b.HasData(
                         new
@@ -218,7 +221,7 @@ namespace CentraliaStore.Data.Migrations
 
                     b.HasKey("OrderId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("CentraliaStore.Models.Phone", b =>
@@ -240,7 +243,7 @@ namespace CentraliaStore.Data.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.ToTable("Phones", (string)null);
+                    b.ToTable("Phones");
                 });
 
             modelBuilder.Entity("CentraliaStore.Models.Product", b =>
@@ -266,7 +269,7 @@ namespace CentraliaStore.Data.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
 
                     b.HasData(
                         new
