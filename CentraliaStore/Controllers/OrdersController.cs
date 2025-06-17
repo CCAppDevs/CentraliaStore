@@ -3,61 +3,68 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CentraliaStore.Data;
 using CentraliaStore.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using CentraliaStore.Areas.Identity;
 
 namespace CentraliaStore.Controllers
 {
     public class OrdersController : Controller
     {
         private readonly StoreContext _context;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly IAuthorizationService _authorizationService;
 
-        public OrdersController(StoreContext context)
+        public OrdersController(StoreContext context, UserManager<AppUser> userManager, IAuthorizationService authorizationService)
         {
             _context = context;
+            _userManager = userManager;
+            _authorizationService = authorizationService;
         }
 
-        // GET: Orders
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Orders.ToListAsync());
+            var currentUserId = _userManager.GetUserId(User);
+            var isAdmin = User.IsInRole("Administrator");
+
+            var orders = await _context.Orders
+                .Where(o => isAdmin || o.UserId == currentUserId)
+                .ToListAsync();
+
+            return View(orders);
         }
 
-        // GET: Orders/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
-            var order = await _context.Orders
-                .FirstOrDefaultAsync(m => m.OrderId == id);
+            var order = await _context.Orders.FirstOrDefaultAsync(m => m.OrderId == id);
             if (order == null)
-            {
                 return NotFound();
-            }
+
+            var authResult = await _authorizationService.AuthorizeAsync(User, order, "IsOrderOwner");
+            if (!authResult.Succeeded)
+                return Forbid();
 
             return View(order);
         }
 
-        // GET: Orders/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Orders/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("OrderId,ProductId,Quantity,UserId,OrderedOn")] Order order)
+        public async Task<IActionResult> Create([Bind("OrderId,ProductId,Quantity,OrderedOn")] Order order)
         {
             if (ModelState.IsValid)
             {
+                order.UserId = _userManager.GetUserId(User);
                 _context.Add(order);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -65,33 +72,36 @@ namespace CentraliaStore.Controllers
             return View(order);
         }
 
-        // GET: Orders/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var order = await _context.Orders.FindAsync(id);
             if (order == null)
-            {
                 return NotFound();
-            }
+
+            var authResult = await _authorizationService.AuthorizeAsync(User, order, "IsOrderOwner");
+            if (!authResult.Succeeded)
+                return Forbid();
+
             return View(order);
         }
 
-        // POST: Orders/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("OrderId,ProductId,Quantity,UserId,OrderedOn")] Order order)
         {
             if (id != order.OrderId)
-            {
                 return NotFound();
-            }
+
+            var existingOrder = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == id);
+            if (existingOrder == null)
+                return NotFound();
+
+            var authResult = await _authorizationService.AuthorizeAsync(User, existingOrder, "IsOrderOwner");
+            if (!authResult.Succeeded)
+                return Forbid();
 
             if (ModelState.IsValid)
             {
@@ -103,48 +113,44 @@ namespace CentraliaStore.Controllers
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!OrderExists(order.OrderId))
-                    {
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
                 return RedirectToAction(nameof(Index));
             }
             return View(order);
         }
 
-        // GET: Orders/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
-            var order = await _context.Orders
-                .FirstOrDefaultAsync(m => m.OrderId == id);
+            var order = await _context.Orders.FirstOrDefaultAsync(m => m.OrderId == id);
             if (order == null)
-            {
                 return NotFound();
-            }
+
+            var authResult = await _authorizationService.AuthorizeAsync(User, order, "IsOrderOwner");
+            if (!authResult.Succeeded)
+                return Forbid();
 
             return View(order);
         }
 
-        // POST: Orders/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var order = await _context.Orders.FindAsync(id);
-            if (order != null)
-            {
-                _context.Orders.Remove(order);
-            }
+            if (order == null)
+                return NotFound();
 
+            var authResult = await _authorizationService.AuthorizeAsync(User, order, "IsOrderOwner");
+            if (!authResult.Succeeded)
+                return Forbid();
+
+            _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }

@@ -1,11 +1,15 @@
 using CentraliaStore.Areas.Identity;
 using CentraliaStore.Data;
+using CentraliaStore.Models; 
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CentraliaStore.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+
+using Microsoft.AspNetCore.Authorization;
+using CentraliaStore.Authorization; 
 
 namespace CentraliaStore
 {
@@ -15,10 +19,13 @@ namespace CentraliaStore
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
             builder.Services.AddDbContext<StoreContext>(options =>
                 options.UseSqlServer(connectionString));
+
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
@@ -37,8 +44,18 @@ namespace CentraliaStore
             // crud api key handler
             builder.Services.AddSingleton<IAuthorizationHandler, ApiKeyAuthorizationCrudHandler>();
 
+
             builder.Services.AddControllersWithViews();
-            
+
+       
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("IsOrderOwner", policy =>
+                    policy.Requirements.Add(new OrderOwnerRequirement()));
+            });
+
+            builder.Services.AddScoped<IAuthorizationHandler, OrderAuthorizationHandler>();
+
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())
@@ -46,7 +63,7 @@ namespace CentraliaStore
                 var services = scope.ServiceProvider;
                 AdminSeeder.SeedAdminUser(services).GetAwaiter().GetResult();
             }
-            
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseMigrationsEndPoint();
@@ -60,6 +77,7 @@ namespace CentraliaStore
             app.UseHttpsRedirection();
             app.UseRouting();
 
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
             app.MapStaticAssets();
@@ -67,10 +85,9 @@ namespace CentraliaStore
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
-            app.MapRazorPages()
-               .WithStaticAssets();
 
-           
+            app.MapRazorPages().WithStaticAssets();
+
             app.Run();
         }
     }

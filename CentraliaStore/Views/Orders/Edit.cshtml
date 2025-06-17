@@ -1,4 +1,5 @@
-﻿@model CentraliaStore.Models.Order
+﻿
+@model CentraliaStore.Models.Order
 
 @{
     ViewData["Title"] = "Edit";
@@ -22,11 +23,6 @@
                 <label asp-for="Quantity" class="control-label"></label>
                 <input asp-for="Quantity" class="form-control" />
                 <span asp-validation-for="Quantity" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <input asp-for="UserId" class="form-control" />
-                <span asp-validation-for="UserId" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="OrderedOn" class="control-label"></label>
