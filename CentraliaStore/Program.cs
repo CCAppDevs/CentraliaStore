@@ -1,6 +1,15 @@
+using CentraliaStore.Areas.Identity;
 using CentraliaStore.Data;
+using CentraliaStore.Models; 
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using CentraliaStore.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+
+using Microsoft.AspNetCore.Authorization;
+using CentraliaStore.Authorization; 
 
 namespace CentraliaStore
 {
@@ -10,19 +19,51 @@ namespace CentraliaStore
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
             builder.Services.AddDbContext<StoreContext>(options =>
                 options.UseSqlServer(connectionString));
+
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+            builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<StoreContext>();
+
+            // add a same user edit policy
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("EditPolicy", policy => policy.Requirements.Add(new SameAuthorRequirement()));
+            });
+
+            // adding the service to check the policy
+            builder.Services.AddSingleton<IAuthorizationHandler, ApiKeyAuthorizationHandler>();
+
+            // crud api key handler
+            builder.Services.AddSingleton<IAuthorizationHandler, ApiKeyAuthorizationCrudHandler>();
+
+
             builder.Services.AddControllersWithViews();
+
+       
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("IsOrderOwner", policy =>
+                    policy.Requirements.Add(new OrderOwnerRequirement()));
+            });
+
+            builder.Services.AddScoped<IAuthorizationHandler, OrderAuthorizationHandler>();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                AdminSeeder.SeedAdminUser(services).GetAwaiter().GetResult();
+            }
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseMigrationsEndPoint();
@@ -30,13 +71,13 @@ namespace CentraliaStore
             else
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
             app.UseRouting();
 
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
             app.MapStaticAssets();
@@ -44,8 +85,8 @@ namespace CentraliaStore
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
-            app.MapRazorPages()
-               .WithStaticAssets();
+
+            app.MapRazorPages().WithStaticAssets();
 
             app.Run();
         }

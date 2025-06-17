@@ -1,0 +1,51 @@
+﻿@using CentraliaStore.Areas.Identity
+@using CentraliaStore.Models.ViewModels
+@model UserRoleViewModel
+@{
+    ViewData["Title"] = "Manage User Roles";
+}
+
+<h1>Manage User Roles</h1>
+
+<div>
+    <form>
+        <label for="userId">User</label>
+        <select id="userId">
+            <option selected></option>
+            @foreach (var user in Model.Users)
+            {
+                <option value="@user.Id">@user.UserName</option>
+            }
+        </select>
+        <label for="roleId">Role</label>
+        <select id="roleId">
+            <option selected></option>
+            @foreach (var role in Model.Roles)
+            {
+                <option value="@role.Id">@role.Name</option>
+            }
+        </select>
+        <br />
+        <button>Add to Role</button>
+        <br />
+        <button>Subtract from Role</button>
+    </form>
+</div>
+<div>
+    <h3>Additions</h3>
+    <ul>
+        @foreach (var addition in Model.Additions)
+        {
+            <li>Add @addition.User.UserName to @addition.Role.Name</li>
+        }
+    </ul>
+</div>
+<div>
+    <h3>Subtractions</h3>
+    <ul>
+        @foreach (var subtraction in Model.Subtractions)
+        {
+            <li>Add @subtraction.User.UserName to @subtraction.Role.Name</li>
+        }
+    </ul>
+</div>

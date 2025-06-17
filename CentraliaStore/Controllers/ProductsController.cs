@@ -10,22 +10,23 @@ using CentraliaStore.Models;
 
 namespace CentraliaStore.Controllers
 {
-    public class RolesController : Controller
+    public class ProductsController : Controller
     {
         private readonly StoreContext _context;
 
-        public RolesController(StoreContext context)
+        public ProductsController(StoreContext context)
         {
             _context = context;
         }
 
-        // GET: Roles
+        // GET: Products
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Role.ToListAsync());
+            var storeContext = _context.Products.Include(p => p.Category);
+            return View(await storeContext.ToListAsync());
         }
 
-        // GET: Roles/Details/5
+        // GET: Products/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -33,39 +34,51 @@ namespace CentraliaStore.Controllers
                 return NotFound();
             }
 
-            var role = await _context.Role
-                .FirstOrDefaultAsync(m => m.RoleId == id);
-            if (role == null)
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(m => m.ProductId == id);
+            if (product == null)
             {
                 return NotFound();
             }
 
-            return View(role);
+            return View(product);
         }
 
-        // GET: Roles/Create
+        // GET: Products/Create
         public IActionResult Create()
         {
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "Name");
             return View();
         }
 
-        // POST: Roles/Create
+        // POST: Products/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("RoleId,Name")] Role role)
+        public async Task<IActionResult> Create([Bind("ProductId,Name,Description,CategoryId")] Product product)
         {
-            if (ModelState.IsValid)
+
+
+            if (!ModelState.IsValid)
             {
-                _context.Add(role);
+                Product _product = new Product
+                {
+                    Name = product.Name,
+                    Description = product.Description,
+                    CategoryId = product.CategoryId,
+                    Category = product.Category
+                };
+                _context.Add(_product);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(role);
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "Name", product.CategoryId);
+            return View(product);
         }
 
-        // GET: Roles/Edit/5
+        // GET: Products/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -73,36 +86,37 @@ namespace CentraliaStore.Controllers
                 return NotFound();
             }
 
-            var role = await _context.Role.FindAsync(id);
-            if (role == null)
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
             {
                 return NotFound();
             }
-            return View(role);
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "Name", product.CategoryId);
+            return View(product);
         }
 
-        // POST: Roles/Edit/5
+        // POST: Products/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("RoleId,Name")] Role role)
+        public async Task<IActionResult> Edit(int id, [Bind("ProductId,Name,Description,CategoryId")] Product product)
         {
-            if (id != role.RoleId)
+            if (id != product.ProductId)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(role);
+                    _context.Update(product);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!RoleExists(role.RoleId))
+                    if (!ProductExists(product.ProductId))
                     {
                         return NotFound();
                     }
@@ -113,10 +127,11 @@ namespace CentraliaStore.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(role);
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "Name", product.CategoryId);
+            return View(product);
         }
 
-        // GET: Roles/Delete/5
+        // GET: Products/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -124,34 +139,35 @@ namespace CentraliaStore.Controllers
                 return NotFound();
             }
 
-            var role = await _context.Role
-                .FirstOrDefaultAsync(m => m.RoleId == id);
-            if (role == null)
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(m => m.ProductId == id);
+            if (product == null)
             {
                 return NotFound();
             }
 
-            return View(role);
+            return View(product);
         }
 
-        // POST: Roles/Delete/5
+        // POST: Products/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var role = await _context.Role.FindAsync(id);
-            if (role != null)
+            var product = await _context.Products.FindAsync(id);
+            if (product != null)
             {
-                _context.Role.Remove(role);
+                _context.Products.Remove(product);
             }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool RoleExists(int id)
+        private bool ProductExists(int id)
         {
-            return _context.Role.Any(e => e.RoleId == id);
+            return _context.Products.Any(e => e.ProductId == id);
         }
     }
 }
