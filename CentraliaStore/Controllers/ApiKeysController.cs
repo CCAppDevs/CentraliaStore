@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
+using CentraliaStore.Areas.Identity;
+using CentraliaStore.Authorization;
 using CentraliaStore.Data;
 using CentraliaStore.Models;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
-using CentraliaStore.Areas.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using static CentraliaStore.Infrastructure.ApiKeyAuthorizationCrudHandler;
 
 namespace CentraliaStore.Controllers
@@ -26,7 +27,7 @@ namespace CentraliaStore.Controllers
             StoreContext context,
             UserManager<AppUser> usr,
             IAuthorizationService authorizationService
-            )
+        )
         {
             _context = context;
             _userManager = usr;
@@ -36,8 +37,24 @@ namespace CentraliaStore.Controllers
         // GET: ApiKeys
         public async Task<IActionResult> Index()
         {
-            var keys = _context.ApiKeys.Include(a => a.AppUser).Where(k => k.AppUser.UserName == User.Identity.Name || User.IsInRole("Administrator"));
-            return View(await keys.ToListAsync());
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Administrator");
+
+            IQueryable<ApiKey> keysQuery;
+
+            if (isAdmin)
+            {
+                keysQuery = _context.ApiKeys.Include(k => k.AppUser);
+            }
+            else
+            {
+                keysQuery = _context.ApiKeys
+                    .Where(k => k.AppUserId == userId)
+                    .Include(k => k.AppUser);
+            }
+
+            var keys = await keysQuery.ToListAsync();
+            return View(keys);
         }
 
         // GET: ApiKeys/Details/5
@@ -58,7 +75,7 @@ namespace CentraliaStore.Controllers
             }
 
             var authorizationResult = await _authorizationService
-            .AuthorizeAsync(User, apiKey, Operations.Read);
+                .AuthorizeAsync(User, apiKey, Operations.Read);
 
             if (authorizationResult.Succeeded)
             {
@@ -80,7 +97,8 @@ namespace CentraliaStore.Controllers
             if (!User.IsInRole("Administrator"))
             {
                 ViewData["AppUserId"] = new SelectList(_context.Users.Where(u => u.UserName == User.Identity.Name), "Id", "Id");
-            } else
+            }
+            else
             {
                 ViewData["AppUserId"] = new SelectList(_context.Users, "Id", "Id");
             }
@@ -89,8 +107,6 @@ namespace CentraliaStore.Controllers
         }
 
         // POST: ApiKeys/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("AppUserId")] string appUserId)
@@ -108,7 +124,6 @@ namespace CentraliaStore.Controllers
             }
             else
             {
-                // Is admin, let do it all
                 apiKey = new ApiKey
                 {
                     ApiKeyId = 0,
@@ -116,7 +131,6 @@ namespace CentraliaStore.Controllers
                     AppUserId = appUserId
                 };
             }
-
 
             _context.Add(apiKey);
             await _context.SaveChangesAsync();
@@ -138,7 +152,7 @@ namespace CentraliaStore.Controllers
             }
 
             var authorizationResult = await _authorizationService
-            .AuthorizeAsync(User, apiKey, "EditPolicy");
+                .AuthorizeAsync(User, apiKey, new ApiKeyOwnerRequirement());
 
             if (authorizationResult.Succeeded)
             {
@@ -156,8 +170,6 @@ namespace CentraliaStore.Controllers
         }
 
         // POST: ApiKeys/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("ApiKeyId,ApiSecret,AppUserId")] ApiKey apiKey)
@@ -168,7 +180,7 @@ namespace CentraliaStore.Controllers
             }
 
             var authorizationResult = await _authorizationService
-            .AuthorizeAsync(User, apiKey, "EditPolicy");
+                .AuthorizeAsync(User, apiKey, new ApiKeyOwnerRequirement());
 
             if (authorizationResult.Succeeded)
             {
@@ -192,6 +204,7 @@ namespace CentraliaStore.Controllers
                     }
                     return RedirectToAction(nameof(Index));
                 }
+
                 ViewData["AppUserId"] = new SelectList(_context.Users, "Id", "Id", apiKey.AppUserId);
                 return View(apiKey);
             }
@@ -208,7 +221,6 @@ namespace CentraliaStore.Controllers
         // GET: ApiKeys/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            // TODO: Add delete functionality for only admins
             if (id == null)
             {
                 return NotFound();
@@ -217,9 +229,18 @@ namespace CentraliaStore.Controllers
             var apiKey = await _context.ApiKeys
                 .Include(a => a.AppUser)
                 .FirstOrDefaultAsync(m => m.ApiKeyId == id);
+
             if (apiKey == null)
             {
                 return NotFound();
+            }
+
+            var authorizationResult = await _authorizationService
+                .AuthorizeAsync(User, apiKey, new ApiKeyOwnerRequirement());
+
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             return View(apiKey);
@@ -230,13 +251,22 @@ namespace CentraliaStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            // TODO: Add delete functionality for only admins
             var apiKey = await _context.ApiKeys.FindAsync(id);
-            if (apiKey != null)
+
+            if (apiKey == null)
             {
-                _context.ApiKeys.Remove(apiKey);
+                return NotFound();
             }
 
+            var authorizationResult = await _authorizationService
+                .AuthorizeAsync(User, apiKey, new ApiKeyOwnerRequirement());
+
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
+            }
+
+            _context.ApiKeys.Remove(apiKey);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
