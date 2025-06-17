@@ -7,6 +7,6 @@ namespace CentraliaStore.Areas.Identity
     {
         public virtual ICollection<Phone> PhoneNumbers { get; set; }
         public virtual ICollection<Address> Addresses { get; set; }
-        public virtual ICollection<Role> Role { get; set; }
+        
     }
 }

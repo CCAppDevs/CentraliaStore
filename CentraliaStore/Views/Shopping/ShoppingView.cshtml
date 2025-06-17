@@ -1,0 +1,24 @@
+﻿@model IEnumerable<CentraliaStore.Models.Product>
+
+<h2>Available Products</h2>
+
+<div class="row">
+    @foreach (var product in Model)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">@product.Name</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">@product.Category?.Name</h6>
+                    <p class="card-text">@product.Description</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <!-- Disabled button for now -->
+                    <button class="btn btn-secondary w-100" disabled>
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
