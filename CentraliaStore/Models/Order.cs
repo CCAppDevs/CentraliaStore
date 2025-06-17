@@ -1,6 +1,6 @@
 ﻿namespace CentraliaStore.Models
 {
-    public class Order
+    public partial class Order
     {
         public int OrderId { get; set; }
         public int ProductId { get; set; }

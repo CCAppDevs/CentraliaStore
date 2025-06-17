@@ -1,0 +1,19 @@
+﻿@model CentraliaStore.Models.Order
+@{
+    ViewData["Title"] = $"Edit Order {Model.OrderId}";
+}
+
+<h1>Edit Order @Model.OrderId</h1>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="OrderId" />
+
+    <div class="form-check mb-3">
+        <input asp-for="Completed" class="form-check-input" />
+        <label asp-for="Completed" class="form-check-label">Completed</label>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

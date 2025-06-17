@@ -1,0 +1,60 @@
+﻿@model IEnumerable<CentraliaStore.Models.Order>
+@{
+    string f = ViewBag.Filter as string ?? "incomplete";
+    ViewData["Title"] = "Order Manager";
+}
+
+<h1>Order Manager</h1>
+
+<div class="mb-3">
+    <a asp-action="Index" asp-route-filter="incomplete"
+       class="btn btn-outline-primary btn-sm @(f=="incomplete"?"active":"")">
+        Incomplete
+    </a>
+    <a asp-action="Index" asp-route-filter="complete"
+       class="btn btn-outline-primary btn-sm @(f=="complete"?"active":"")">
+        Completed
+    </a>
+    <a asp-action="Index" asp-route-filter="all"
+       class="btn btn-outline-primary btn-sm @(f=="all"?"active":"")">
+        All
+    </a>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Ordered On</th>
+            <th>Status</th>
+            <th class="text-end">Qty</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>@o.OrderId</td>
+                <td>@o.UserId</td>
+                <td>@o.OrderedOn.ToString("g")</td>
+                <td>
+                    @if (o.Completed)
+                    {
+                        <span class="badge bg-success">Completed</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Incomplete</span>
+                    }
+                </td>
+                <td class="text-end">@o.Quantity</td>
+                <td class="text-end">
+                    <a asp-action="Edit" asp-route-id="@o.OrderId" class="btn btn-sm btn-primary">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@o.OrderId" class="btn btn-sm btn-danger">Del</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
