@@ -1,0 +1,59 @@
+﻿@model IEnumerable<CentraliaStore.Models.Product>
+
+@{
+    // The CartController put a Dictionary<int,int> in ViewBag.Cart:
+    // key = ProductId, value = Qty
+    var cart = ViewBag.Cart as Dictionary<int, int> ?? new Dictionary<int, int>();
+
+    ViewData["Title"] = "Your Cart";
+}
+
+<h1>Your Cart</h1>
+
+@if (!Model.Any())
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th class="text-center">Qty</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var product in Model)
+            {
+                var qty = cart[product.ProductId];
+
+                <tr>
+                    <td>
+                        <a asp-controller="Products"
+                           asp-action="Details"
+                           asp-route-id="@product.ProductId">
+                            @product.Name
+                        </a>
+                    </td>
+
+                    <td class="text-center">@qty</td>
+
+                    <td class="text-center">
+                        <form asp-action="Remove"
+                              method="post"
+                              class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@product.ProductId" />
+                            <button class="btn btn-sm btn-danger" type="submit">
+                                Remove
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
