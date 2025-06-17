@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using CentraliaStore.Areas.Identity;
 using CentraliaStore.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CentraliaStore.Controllers
@@ -7,14 +9,31 @@ namespace CentraliaStore.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        private readonly UserManager<AppUser> _userManager;
+        public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager )
         {
             _logger = logger;
+            _userManager = userManager;
         }
 
-        public IActionResult Index()
+        
+
+        public async Task <IActionResult> Index()
         {
+            if (User.Identity.IsAuthenticated)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    Console.WriteLine($"User roles: {string.Join(", ", roles)}");
+
+                    if (roles.Contains("Administrator"))
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                }
+            }
             return View();
         }
 

@@ -4,6 +4,7 @@ using CentraliaStore.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CentraliaStore.Data.Migrations
 {
     [DbContext(typeof(StoreContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250522180019_UpdatedRolesAgain")]
+    partial class UpdatedRolesAgain
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -244,36 +247,6 @@ namespace CentraliaStore.Data.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Products");
-
-                    b.HasData(
-                        new
-                        {
-                            ProductId = 1,
-                            CategoryId = 1,
-                            Description = "Warm and comfortable",
-                            Name = "Logo Hoodie"
-                        },
-                        new
-                        {
-                            ProductId = 2,
-                            CategoryId = 2,
-                            Description = "Keeps drinks cold",
-                            Name = "Steel Water Bottle"
-                        },
-                        new
-                        {
-                            ProductId = 3,
-                            CategoryId = 3,
-                            Description = "150 pages",
-                            Name = "Color Changing Notebook"
-                        },
-                        new
-                        {
-                            ProductId = 4,
-                            CategoryId = 4,
-                            Description = "Intro to c#",
-                            Name = " c# Textbook"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

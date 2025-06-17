@@ -1,0 +1,34 @@
+﻿@model CentraliaStore.Models.Order
+@{
+    ViewData["Title"] = $"Order {Model.OrderId}";
+}
+
+<h1>Order @Model.OrderId</h1>
+
+<table class="table table-borderless">
+    <tr>
+        <th>User</th>
+        <td>@Model.UserId</td>
+    </tr>
+    <tr>
+        <th>Product</th>
+        <td>@Model.ProductId</td>
+    </tr>
+    <tr>
+        <th>Quantity</th>
+        <td>@Model.Quantity</td>
+    </tr>
+    <tr>
+        <th>Ordered On</th>
+        <td>@Model.OrderedOn</td>
+    </tr>
+    <tr>
+        <th>Status</th>
+        <td>@(Model.Completed ? "Completed" : "Incomplete")</td>
+    </tr>
+</table>
+
+<p>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+    <a asp-action="Edit" asp-route-id="@Model.OrderId" class="btn btn-primary">Edit</a>
+</p>

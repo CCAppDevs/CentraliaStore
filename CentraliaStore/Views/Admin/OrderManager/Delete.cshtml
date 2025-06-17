@@ -1,0 +1,17 @@
+﻿@model CentraliaStore.Models.Order
+@{
+    ViewData["Title"] = $"Delete Order {Model.OrderId}";
+}
+
+<h1>Delete Order @Model.OrderId</h1>
+
+<div class="alert alert-warning">
+    This will permanently remove the order record. Are you sure?
+</div>
+
+<form asp-action="DeleteConfirmed" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="OrderId" />
+    <button class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
