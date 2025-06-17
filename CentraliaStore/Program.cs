@@ -1,11 +1,12 @@
 using CentraliaStore.Areas.Identity;
+using CentraliaStore.Authorization;
 using CentraliaStore.Data;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using CentraliaStore.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using CentraliaStore.Infrastructure;
-using Microsoft.AspNetCore.Authorization;
 
 namespace CentraliaStore
 {
@@ -15,38 +16,46 @@ namespace CentraliaStore
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
             builder.Services.AddDbContext<StoreContext>(options =>
                 options.UseSqlServer(connectionString));
+
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
+            builder.Services.AddDefaultIdentity<AppUser>(options =>
+                options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<StoreContext>();
 
-            // add a same user edit policy
             builder.Services.AddAuthorization(options =>
             {
                 options.AddPolicy("EditPolicy", policy => policy.Requirements.Add(new SameAuthorRequirement()));
             });
 
-            // adding the service to check the policy
             builder.Services.AddSingleton<IAuthorizationHandler, ApiKeyAuthorizationHandler>();
-
-            // crud api key handler
             builder.Services.AddSingleton<IAuthorizationHandler, ApiKeyAuthorizationCrudHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, ApiKeyOwnerHandler>();
 
             builder.Services.AddControllersWithViews();
-            
+
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-                AdminSeeder.SeedAdminUser(services).GetAwaiter().GetResult();
+                try
+                {
+                    AdminSeeder.SeedAdminUser(services).GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "An error occurred while seeding the admin user.");
+                }
             }
-            
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseMigrationsEndPoint();
@@ -58,19 +67,23 @@ namespace CentraliaStore
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
             app.UseRouting();
 
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
             app.MapStaticAssets();
+
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
+
             app.MapRazorPages()
                .WithStaticAssets();
 
-           
             app.Run();
         }
     }

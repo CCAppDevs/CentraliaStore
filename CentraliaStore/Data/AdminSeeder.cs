@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using CentraliaStore.Areas.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
 
 namespace CentraliaStore.Data
 {
@@ -16,7 +19,11 @@ namespace CentraliaStore.Data
 
             if (!await roleManager.RoleExistsAsync(adminRole))
             {
-                await roleManager.CreateAsync(new IdentityRole(adminRole));
+                var roleResult = await roleManager.CreateAsync(new IdentityRole(adminRole));
+                if (!roleResult.Succeeded)
+                {
+                    throw new Exception($"Failed to create role '{adminRole}': {string.Join(", ", roleResult.Errors)}");
+                }
             }
 
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
@@ -29,15 +36,28 @@ namespace CentraliaStore.Data
                     EmailConfirmed = true
                 };
 
-                var result = await userManager.CreateAsync(user, adminPassword);
-                if (result.Succeeded)
+                var createUserResult = await userManager.CreateAsync(user, adminPassword);
+                if (!createUserResult.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(user, adminRole);
+                    throw new Exception($"Failed to create admin user: {string.Join(", ", createUserResult.Errors)}");
+                }
+
+                var addToRoleResult = await userManager.AddToRoleAsync(user, adminRole);
+                if (!addToRoleResult.Succeeded)
+                {
+                    throw new Exception($"Failed to add admin user to role: {string.Join(", ", addToRoleResult.Errors)}");
                 }
             }
-            else if (!await userManager.IsInRoleAsync(adminUser, adminRole))
+            else
             {
-                await userManager.AddToRoleAsync(adminUser, adminRole);
+                if (!await userManager.IsInRoleAsync(adminUser, adminRole))
+                {
+                    var addToRoleResult = await userManager.AddToRoleAsync(adminUser, adminRole);
+                    if (!addToRoleResult.Succeeded)
+                    {
+                        throw new Exception($"Failed to add existing admin user to role: {string.Join(", ", addToRoleResult.Errors)}");
+                    }
+                }
             }
         }
     }
